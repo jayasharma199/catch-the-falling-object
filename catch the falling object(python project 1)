@@ -1,0 +1,143 @@
+
+import pygame
+import random
+import sys
+
+# Initialize pygame
+pygame.init()
+# Screen settings
+WIDTH = 600
+HEIGHT = 700
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Catch the Falling Objects")
+
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("Arial", 30)
+
+# Colors
+WHITE = (255, 255, 255)
+BLUE = (50, 120, 255)
+RED = (255, 60, 60)
+BLACK = (0, 0, 0)
+GREEN = (30, 180, 80)
+
+# Player settings
+basket = pygame.Rect(250, 630, 100, 30)
+player_speed = 7
+
+# Falling object
+objects = []
+object_speed = 4
+spawn_timer = 0
+
+# Game settings
+score = 0
+lives = 3
+game_over = False
+
+def reset_game():
+    global score, lives, objects, object_speed
+    global spawn_timer, game_over
+
+    score = 0
+    lives = 3
+    objects = []
+    object_speed = 4
+    spawn_timer = 0
+    basket.x = 250
+    game_over = False
+
+# Main game loop
+running = True
+
+while running:
+
+    clock.tick(60)
+    screen.fill(WHITE)
+
+    # Events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+            if game_over and event.key == pygame.K_r:
+                reset_game()
+
+    if not game_over:
+
+        # Player movement
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_LEFT]:
+            basket.x -= player_speed
+
+        if keys[pygame.K_RIGHT]:
+            basket.x += player_speed
+
+        basket.x = max(0, min(WIDTH - basket.width, basket.x))
+
+        # Spawn falling objects
+        spawn_timer += 1
+
+        if spawn_timer >= 40:
+            x = random.randint(10, WIDTH - 40)
+            objects.append(pygame.Rect(x, 0, 30, 30))
+            spawn_timer = 0
+
+        # Move and check objects
+        for obj in objects[:]:
+            obj.y += object_speed
+
+            # Catch object
+            if basket.colliderect(obj):
+                score += 1
+                objects.remove(obj)
+
+                if score % 5 == 0:
+                    object_speed += 1
+
+            # Miss object
+            elif obj.top > HEIGHT:
+                objects.remove(obj)
+                lives -= 1
+
+                if lives <= 0:
+                    game_over = True
+
+        # Draw player
+        pygame.draw.rect(screen, BLUE, basket)
+
+        # Draw falling objects
+        for obj in objects:
+            pygame.draw.ellipse(screen, RED, obj)
+
+        # Score and lives
+        score_text = font.render(
+            f"Score: {score}", True, BLACK
+        )
+        lives_text = font.render(
+            f"Lives: {lives}", True, GREEN
+        )
+
+        screen.blit(score_text, (20, 20))
+        screen.blit(lives_text, (450, 20))
+
+    else:
+        # Game over screen
+        msg = font.render("GAME OVER!", True, RED)
+        final_score = font.render(
+            f"Final Score: {score}", True, BLACK
+        )
+        restart = font.render(
+            "Press R to Restart", True, BLUE
+        )
+
+        screen.blit(msg, (210, 250))
+        screen.blit(final_score, (200, 310))
+        screen.blit(restart, (185, 370))
+
+    pygame.display.update()
+
+pygame.quit()
+sys.exit()
